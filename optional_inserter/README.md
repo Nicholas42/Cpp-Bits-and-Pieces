@@ -1,0 +1,1 @@
+A small iterator adaptor that inserts elements into a container. It takes std::optional of the value type of the container and inserts it iff the optional contains a value. This enables a functionality similar to ranges::filter.
