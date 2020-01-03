@@ -1,0 +1,1 @@
+An iterator for members of a struct. I decided to have the pointers to members as non-type template parameters since I think this is the normal use case (if one exists^^). Furthermore, so two iterators over different members have a different type, what I think is good for strong typing.
