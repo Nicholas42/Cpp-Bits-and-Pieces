@@ -6,8 +6,7 @@ template<class C, typename T, T C::*... members>
 class struct_it;
 
 template<class C, typename T, T C::*... members>
-class struct_it
-{
+class struct_it {
   public:
     using size_type = std::size_t;
     using difference_type = std::ptrdiff_t;
@@ -20,133 +19,106 @@ class struct_it
 
     constexpr struct_it(size_t index, C &c) : _index{index}, _c(std::addressof(c)) {}
 
-    constexpr static struct_it<C, T, members...> make_end(C &c)
-    {
+    constexpr static struct_it<C, T, members...> make_end(C &c) {
         return struct_it<C, T, members...>(sizeof...(members), c);
     }
     // Does not check for other._c == _c, since that is not always
     // possible. Maybe do &other._c == &_c?
-    constexpr bool operator==(const struct_it &other) const
-    {
+    constexpr bool operator==(const struct_it &other) const {
         return other._index == _index;
     }
 
-    constexpr bool operator!=(const struct_it &other) const
-    {
+    constexpr bool operator!=(const struct_it &other) const {
         return !(other == *this);
     }
 
-    constexpr const T &operator*() const
-    {
+    constexpr const T &operator*() const {
         return _c->*_members[_index];
     }
 
-    constexpr const T *operator->() const
-    {
+    constexpr const T *operator->() const {
         return &(_c->*_members[_index]);
     }
 
-    constexpr const T &operator[](difference_type n) const
-    {
+    constexpr const T &operator[](difference_type n) const {
         return &(_c->*_members[_index + n]);
     }
 
-    constexpr T &operator*()
-    {
+    constexpr T &operator*() {
         return _c->*_members[_index];
     }
 
-    constexpr T *operator->()
-    {
+    constexpr T *operator->() {
         return &(_c->*_members[_index]);
     }
 
-    constexpr T &operator[](difference_type n)
-    {
+    constexpr T &operator[](difference_type n) {
         return &(_c->*_members[_index + n]);
     }
 
-    constexpr struct_it &operator--()
-    {
+    constexpr struct_it &operator--() {
         --_index;
         return *this;
     }
 
-    constexpr struct_it &operator--(int)
-    {
+    constexpr struct_it &operator--(int) {
         auto copy = *this;
         --_index;
         return copy;
     }
-    constexpr struct_it &operator++()
-    {
+    constexpr struct_it &operator++() {
         ++_index;
         return *this;
     }
 
-    constexpr struct_it &operator++(int)
-    {
+    constexpr struct_it &operator++(int) {
         auto copy = *this;
         ++_index;
         return copy;
     }
 
-    constexpr struct_it &operator+=(difference_type n)
-    {
+    constexpr struct_it &operator+=(difference_type n) {
         _index += n;
         return *this;
     }
 
-    constexpr struct_it &operator-=(difference_type n)
-    {
+    constexpr struct_it &operator-=(difference_type n) {
         _index -= n;
         return *this;
     }
 
     friend struct_it<C, T, members...>
         operator+(const struct_it<C, T, members...> &s,
-                  typename struct_it<C, T, members...>::difference_type n)
-    {
+                  typename struct_it<C, T, members...>::difference_type n) {
         auto ret = s;
         return ret += n;
     }
 
     friend struct_it<C, T, members...>
         operator-(const struct_it<C, T, members...> &s,
-                  typename struct_it<C, T, members...>::difference_type n)
-    {
+                  typename struct_it<C, T, members...>::difference_type n) {
         auto ret = s;
         return ret -= n;
     }
 
-    friend bool operator<(const struct_it<C, T, members...> &s,
-                          const struct_it<C, T, members...> &t)
-    {
+    friend bool operator<(const struct_it<C, T, members...> &s, const struct_it<C, T, members...> &t) {
         return s._index < t._index;
     }
 
-    friend bool operator>(const struct_it<C, T, members...> &s,
-                          const struct_it<C, T, members...> &t)
-    {
+    friend bool operator>(const struct_it<C, T, members...> &s, const struct_it<C, T, members...> &t) {
         return s._index < t._index;
     }
 
-    friend bool operator<=(const struct_it<C, T, members...> &s,
-                           const struct_it<C, T, members...> &t)
-    {
+    friend bool operator<=(const struct_it<C, T, members...> &s, const struct_it<C, T, members...> &t) {
         return s._index <= t._index;
     }
 
-    friend bool operator>=(const struct_it<C, T, members...> &s,
-                           const struct_it<C, T, members...> &t)
-    {
+    friend bool operator>=(const struct_it<C, T, members...> &s, const struct_it<C, T, members...> &t) {
         return s._index >= t._index;
     }
 
     friend typename struct_it<C, T, members...>::difference_type
-        operator-(const struct_it<C, T, members...> &s,
-                  const struct_it<C, T, members...> &t)
-    {
+        operator-(const struct_it<C, T, members...> &s, const struct_it<C, T, members...> &t) {
         return s._index - t._index;
     }
 

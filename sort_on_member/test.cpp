@@ -9,8 +9,7 @@
 
 using namespace std::literals;
 
-class Private
-{
+class Private {
     int secret;
 
   public:
@@ -21,20 +20,17 @@ class Private
     // but partial specializations are not allowed in friend declarations, so I would not
     // be able to template on the Compare class.
     template<class Compare>
-    static constexpr Comparator<Private, int, Compare> comparator(Compare c = Compare{})
-    {
+    static constexpr Comparator<Private, int, Compare> comparator(Compare c = Compare{}) {
         return Comparator<Private, int, Compare>{&Private::secret, c};
     }
 };
 
-struct Student
-{
+struct Student {
     std::string name;
     int age;
 };
 
-int main()
-{
+int main() {
     Comparator cint{&Student::age};
     Comparator cstring{&Student::name, std::greater<>{}};
     auto cpriv = Private::comparator<std::less<>>();
@@ -45,15 +41,13 @@ int main()
 
     std::sort(begin(vec), end(vec), cint);
     assert(vec.front().age < vec.back().age);
-    for (auto &s: vec)
-    {
+    for (auto &s: vec) {
         std::cout << s.age << "\n";
     }
 
     std::sort(begin(vec), end(vec), cstring);
     assert(vec.front().name > vec.back().name);
-    for (auto &s: vec)
-    {
+    for (auto &s: vec) {
         std::cout << s.name << "\n";
     }
 
