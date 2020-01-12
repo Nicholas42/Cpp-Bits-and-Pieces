@@ -120,6 +120,14 @@ struct TupleIter {
     constexpr auto operator*() const noexcept -> const value_t & {
         return std::get<Index>(tup);
     }
+
+    constexpr auto get_tuple() const noexcept -> const tuple_t & {
+        return tup;
+    }
+
+    constexpr auto get_tuple() noexcept -> tuple_t & {
+        return tup;
+    }
 };
 
 template<size_t Index, class Tuple>
