@@ -4,14 +4,21 @@
 #include <type_traits>
 #include <iterator>
 #include <tuple>
+#include <variant>
 
 namespace tuple_iter {
+
+// Tag objects to enable deduction of index
+template<size_t Index>
+inline constexpr std::integral_constant<size_t, Index> index_tag;
 
 template<size_t Index, class Tup>
 struct TupleIter {
     using tuple_t = Tup;
 
     TupleIter(tuple_t &t) : tup(t) {}
+
+    TupleIter(tuple_t &t, std::integral_constant<size_t, Index>) : tup(t) {}
 
     // BEGIN - Static Method Section
 
@@ -114,6 +121,9 @@ struct TupleIter {
         return std::get<Index>(tup);
     }
 };
+
+template<size_t Index, class Tuple>
+TupleIter(Tuple, std::integral_constant<size_t, Index>) -> TupleIter<Index, Tuple>;
 
 template<std::ptrdiff_t N, std::size_t Index, class Tup>
 constexpr auto advance(const TupleIter<Index, Tup> &it) -> TupleIter<Index + N, Tup> {
