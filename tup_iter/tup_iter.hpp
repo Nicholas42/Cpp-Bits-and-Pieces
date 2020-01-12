@@ -11,10 +11,12 @@ template<size_t Index, class Tup>
 struct TupleIter {
     using tuple_t = Tup;
 
+    TupleIter(tuple_t &t) : tup(t) {}
+
     // BEGIN - Static Method Section
 
     static constexpr auto size() noexcept -> size_t {
-        return std::tuple_size_v<std::decay_t<Tup>>;
+        return std::tuple_size_v<std::decay_t<tuple_t>>;
     }
 
     static constexpr auto index() noexcept -> size_t {
@@ -35,7 +37,7 @@ struct TupleIter {
     // END - Static Method Section
 
   private:
-    Tup &tup;
+    tuple_t &tup;
 
     // Helper for value_t since we cannot specialize a type alias directly
 
@@ -50,29 +52,27 @@ struct TupleIter {
     // value_t for all dereferencable iterators
     template<size_t I>
     struct value_t_struct<I, std::enable_if_t<(I < size())>> {
-        using type = std::tuple_element_t<I, Tup>;
+        using type = std::tuple_element_t<I, tuple_t>;
     };
 
   public:
     // Return value of dereferencing operator
     using value_t = typename value_t_struct<>::type;
 
-    TupleIter(Tup &t) : tup(t) {}
-
     // Comparison methods. Compare equal to objects of the same type (i.e. have same index are over same
     // tuple type)
 
-    constexpr bool operator==([[maybe_unused]] const TupleIter<Index, Tup> &other) const noexcept {
+    constexpr bool operator==([[maybe_unused]] const TupleIter<Index, tuple_t> &other) const noexcept {
         return true;
     }
 
     template<size_t I, class = std::enable_if_t<I != Index>>
-    constexpr bool operator==([[maybe_unused]] const TupleIter<I, Tup> &other) const noexcept {
+    constexpr bool operator==([[maybe_unused]] const TupleIter<I, tuple_t> &other) const noexcept {
         return false;
     }
 
     template<size_t I>
-    constexpr bool operator!=(const TupleIter<I, Tup> &other) const noexcept {
+    constexpr bool operator!=(const TupleIter<I, tuple_t> &other) const noexcept {
         return !(*this == other);
     }
 
@@ -90,17 +90,17 @@ struct TupleIter {
     // So reassigning the return value is not that weird.
 
     template<size_t I = Index, class = std::enable_if_t<(0 < I)>>
-    [[nodiscard]] constexpr auto operator--() const noexcept -> TupleIter<Index - 1, Tup> {
+    [[nodiscard]] constexpr auto operator--() const noexcept -> TupleIter<Index - 1, tuple_t> {
         return {tup};
     }
 
     template<size_t I = Index, class = std::enable_if_t<(I < size())>>
-    [[nodiscard]] constexpr auto operator++() const noexcept -> TupleIter<Index + 1, Tup> {
+    [[nodiscard]] constexpr auto operator++() const noexcept -> TupleIter<Index + 1, tuple_t> {
         return {tup};
     }
 
     template<std::ptrdiff_t N>
-    [[nodiscard]] constexpr auto advance() const noexcept -> TupleIter<Index + N, Tup> {
+    [[nodiscard]] constexpr auto advance() const noexcept -> TupleIter<Index + N, tuple_t> {
         return {tup};
     }
 
