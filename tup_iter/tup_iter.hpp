@@ -131,7 +131,16 @@ struct TupleIter {
 };
 
 template<size_t Index, class Tuple>
-TupleIter(Tuple, std::integral_constant<size_t, Index>) -> TupleIter<Tuple, Index>;
+TupleIter(Tuple, std::integral_constant<size_t, Index>)->TupleIter<Tuple, Index>;
+
+template<class T>
+struct is_tuple_iter : std::false_type {};
+
+template<class Tup, size_t Index>
+struct is_tuple_iter<TupleIter<Tup, Index>> : std::true_type {};
+
+template<class T>
+inline constexpr bool is_tuple_iter_v = is_tuple_iter<T>::value;
 
 template<std::ptrdiff_t N, std::size_t Index, class Tup>
 constexpr auto advance(const TupleIter<Tup, Index> &it) -> TupleIter<Tup, Index + N> {
@@ -139,13 +148,13 @@ constexpr auto advance(const TupleIter<Tup, Index> &it) -> TupleIter<Tup, Index 
 }
 
 // Easier to use in constant expressions
-template<class TupIter1, class TupIter2>
+template<class TupIter1, class TupIter2,
+         class = std::enable_if_t<is_tuple_iter_v<TupIter1> && is_tuple_iter_v<TupIter2>>>
 constexpr size_t distance_v = TupIter2::index() - TupIter1::index();
 
 // Performs template argument deduction
 template<class TupIter1, class TupIter2>
-constexpr auto distance([[maybe_unused]] const TupIter1 &it1,
-                        [[maybe_unused]] const TupIter2 &it2) {
+constexpr auto distance([[maybe_unused]] const TupIter1 &it1, [[maybe_unused]] const TupIter2 &it2) {
     return distance_v<TupIter1, TupIter2>;
 }
 
