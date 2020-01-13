@@ -46,7 +46,9 @@ struct TupleIter {
   private:
     tuple_t &tup;
 
-    // Helper for value_t since we cannot specialize a type alias directly
+    // Helper for value_t since we cannot specialize a type alias directly and have to prevent the
+    // instantiation of std::tuple_element_t<I, tuple_t> for the case of I == size() sinze then this
+    // would not compile. Hence, we cannot simply use std::conditional.
 
     // value_t for the past-the-end iterator
     template<size_t I = Index, class = void>
