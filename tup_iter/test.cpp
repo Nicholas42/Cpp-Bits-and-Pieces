@@ -1,5 +1,7 @@
+#include <iostream>
 #include <cassert>
 #include "tup_iter.hpp"
+#include "any_iter.hpp"
 
 using namespace tuple_iter;
 
@@ -22,4 +24,15 @@ int main() {
 
     // decltype(e)::value_t i = 5; // Good: Does not compile
     assert(*a == 2.1);
+
+    auto any = make_any_iter(iter);
+    auto any2 = make_any_iter(tup, index_tag<2>, std::index_sequence<2>{});
+    assert(any.index() == 1);
+    assert(any2.index() == 0);
+
+    std::visit(
+        [](auto &&first, auto &&second) { std::cout << *first << ' ' << *second << '\n'; }, any, any2);
+
+    const char value{std::get<1>(any)};
+    assert(value == std::get<1>(tup));
 }
