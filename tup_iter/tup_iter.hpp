@@ -61,7 +61,7 @@ struct TupleIter {
     // value_t for all dereferencable iterators
     template<size_t I>
     struct value_t_struct<I, std::enable_if_t<(I < size())>> {
-        using type = std::tuple_element_t<I, tuple_t>;
+        using type = std::tuple_element_t<I, std::decay_t<tuple_t>>;
     };
 
   public:
@@ -135,11 +135,16 @@ struct TupleIter {
 template<size_t Index, class Tuple>
 TupleIter(Tuple, std::integral_constant<size_t, Index>)->TupleIter<Tuple, Index>;
 
+namespace detail {
 template<class T>
-struct is_tuple_iter : std::false_type {};
+struct is_tuple_iter_impl : std::false_type {};
 
 template<class Tup, size_t Index>
-struct is_tuple_iter<TupleIter<Tup, Index>> : std::true_type {};
+struct is_tuple_iter_impl<TupleIter<Tup, Index>> : std::true_type {};
+}   // namespace detail
+
+template<class TupIter>
+struct is_tuple_iter : detail::is_tuple_iter_impl<std::decay_t<TupIter>> {};
 
 template<class T>
 inline constexpr bool is_tuple_iter_v = is_tuple_iter<T>::value;
