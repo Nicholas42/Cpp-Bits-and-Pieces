@@ -1,9 +1,9 @@
 #ifndef TUP_ITER_HPP
 #define TUP_ITER_HPP
 
-#include <type_traits>
 #include <iterator>
 #include <tuple>
+#include <type_traits>
 #include <variant>
 
 namespace tuple_iter {
@@ -16,9 +16,9 @@ template<class Tup, size_t Index>
 struct TupleIter {
     using tuple_t = Tup;
 
-    TupleIter(tuple_t &t) : tup(t) {}
+    explicit TupleIter(tuple_t &t) : tup(t) {}
 
-    TupleIter(tuple_t &t, std::integral_constant<size_t, Index>) : tup(t) {}
+    TupleIter(tuple_t &t, std::integral_constant<size_t, Index> /*unused*/) : tup(t) {}
 
     // BEGIN - Static Method Section
 
@@ -71,17 +71,19 @@ struct TupleIter {
     // Comparison methods. Compare equal to objects of the same type (i.e. have same index are over same
     // tuple type)
 
-    constexpr bool operator==([[maybe_unused]] const TupleIter<tuple_t, Index> &other) const noexcept {
+    constexpr auto operator==([[maybe_unused]] const TupleIter<tuple_t, Index> &other) const noexcept
+        -> bool {
         return true;
     }
 
     template<size_t I, class = std::enable_if_t<I != Index>>
-    constexpr bool operator==([[maybe_unused]] const TupleIter<tuple_t, I> &other) const noexcept {
+    constexpr auto operator==([[maybe_unused]] const TupleIter<tuple_t, I> &other) const noexcept
+        -> bool {
         return false;
     }
 
     template<size_t I>
-    constexpr bool operator!=(const TupleIter<tuple_t, I> &other) const noexcept {
+    constexpr auto operator!=(const TupleIter<tuple_t, I> &other) const noexcept -> bool {
         return !(*this == other);
     }
 
@@ -100,17 +102,17 @@ struct TupleIter {
 
     template<size_t I = Index, class = std::enable_if_t<(0 < I)>>
     [[nodiscard]] constexpr auto operator--() const noexcept -> TupleIter<tuple_t, Index - 1> {
-        return {tup};
+        return TupleIter<tuple_t, Index - 1>{tup};
     }
 
     template<size_t I = Index, class = std::enable_if_t<(I < size())>>
     [[nodiscard]] constexpr auto operator++() const noexcept -> TupleIter<tuple_t, Index + 1> {
-        return {tup};
+        return TupleIter<tuple_t, Index + 1>{tup};
     }
 
     template<std::ptrdiff_t N>
     [[nodiscard]] constexpr auto advance() const noexcept -> TupleIter<tuple_t, Index + N> {
-        return {tup};
+        return TupleIter<tuple_t, Index + N>{tup};
     }
 
     template<size_t I = Index, class = std::enable_if_t<(I < size())>>
@@ -128,7 +130,7 @@ struct TupleIter {
         return std::get<index()>(tup);
     }
 
-    constexpr auto get_tuple() const noexcept -> const tuple_t & {
+    [[nodiscard]] constexpr auto get_tuple() const noexcept -> const tuple_t & {
         return tup;
     }
 
@@ -186,12 +188,12 @@ using end_t = TupleIter<T, std::tuple_size_v<std::decay_t<T>>>;
 
 template<class T>
 constexpr auto begin([[maybe_unused]] T &tup) noexcept -> begin_t<T> {
-    return {tup};
+    return begin_t<T>{tup};
 }
 
 template<class T>
 constexpr auto end([[maybe_unused]] T &tup) noexcept -> end_t<T> {
-    return {tup};
+    return end_t<T>{tup};
 }
 
 template<class TupIter, class = std::enable_if_t<is_tuple_iter_v<TupIter>>>

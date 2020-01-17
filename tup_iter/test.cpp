@@ -1,8 +1,8 @@
-#include <iostream>
-#include <cassert>
-#include "tup_iter.hpp"
 #include "any_iter.hpp"
 #include "tup_algo.hpp"
+#include "tup_iter.hpp"
+#include <cassert>
+#include <iostream>
 
 using namespace tuple_iter;
 
@@ -18,11 +18,11 @@ struct StructFinder {
 template<class Val>
 struct ValueFinder {
     template<class T, class = std::enable_if_t<!std::is_same_v<Val, T>>>
-    constexpr bool operator()([[maybe_unused]] T &&) {
+    constexpr auto operator()(T && /*unused*/) -> bool {
         return false;
     }
 
-    constexpr bool operator()(const Val &v) {
+    constexpr auto operator()(const Val &v) -> bool {
         return v == searched;
     }
 
@@ -32,7 +32,7 @@ struct ValueFinder {
 template<class Val>
 ValueFinder(Val)->ValueFinder<Val>;
 
-int main() {
+auto main() -> int {
     std::tuple<int, const char, double> tup{1, 'A', 2.1};
     using tup_t = decltype(tup);
 
@@ -78,7 +78,10 @@ int main() {
 
     std::tuple numbers{1, 1.4, 3l, -7.123f, 'A'};
 
-    auto sum1 = for_each(begin(numbers), end(numbers), [sum=0.](auto v) mutable { std::cout << v << ", "; return sum += v;});
+    auto sum1 = for_each(begin(numbers), end(numbers), [sum = 0.](auto v) mutable {
+        std::cout << v << ", ";
+        return sum += v;
+    });
     auto sum2 = accumulate(begin(numbers), end(numbers));
 
     assert(sum1(0.) == sum2);
