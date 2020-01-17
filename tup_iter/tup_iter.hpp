@@ -123,6 +123,11 @@ struct TupleIter {
         return std::get<Index>(tup);
     }
 
+    template<size_t I = Index, class = std::enable_if_t<(I < size())>>
+    constexpr explicit operator value_t() const {
+        return std::get<index()>(tup);
+    }
+
     constexpr auto get_tuple() const noexcept -> const tuple_t & {
         return tup;
     }
