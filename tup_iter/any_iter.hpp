@@ -21,6 +21,15 @@ struct helper_t<Tuple, std::index_sequence<Indices...>> {
 
 template<class Tuple>
 using default_index_sequence = std::make_index_sequence<std::tuple_size_v<std::decay_t<Tuple>>>;
+
+template<class Begin, class End, size_t... Indices>
+struct span_sequence_impl : span_sequence_impl<decltype(++std::declval<Begin>()), End, Indices..., Begin::index()>{
+};
+
+template<class Iter, size_t... Indices>
+struct span_sequence_impl<Iter, Iter, Indices...> {
+    using sequence = std::index_sequence<Indices...>;
+};
 }   // namespace detail
 
 // Not including the past-the-end iterator per default. It is easier to handle it with std::optional in
@@ -28,6 +37,9 @@ using default_index_sequence = std::make_index_sequence<std::tuple_size_v<std::d
 // have the same methods. It is possible to provide an own sequence of indices that should be considered
 template<class Tuple, class index_seq = detail::default_index_sequence<Tuple>>
 using AnyIter = typename detail::helper_t<Tuple, index_seq>::type;
+
+template<class Begin, class End>
+using span_sequence = typename detail::span_sequence_impl<std::decay_t<Begin>, std::decay_t<End>>::sequence;
 
 template<class TupleIter, class index_seq = detail::default_index_sequence<tuple_t<TupleIter>>,
          class = std::enable_if_t<is_tuple_iter_v<TupleIter>>>

@@ -35,4 +35,6 @@ int main() {
 
     const char value{std::get<1>(any)};
     assert(value == std::get<1>(tup));
+    static_assert(span_sequence<decltype(a), end_t<tup_t>>::size() == 1);
+    static_assert(span_sequence<end_t<tup_t>, end_t<tup_t>>::size() == 0);
 }
