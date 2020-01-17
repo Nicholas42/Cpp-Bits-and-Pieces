@@ -154,6 +154,14 @@ struct is_tuple_iter : detail::is_tuple_iter_impl<std::decay_t<TupIter>> {};
 template<class T>
 inline constexpr bool is_tuple_iter_v = is_tuple_iter<T>::value;
 
+template<class TupIter>
+struct tuple {
+    using type = typename std::decay_t<TupIter>::tuple_t;
+};
+
+template<class TupIter>
+using tuple_t = typename tuple<TupIter>::type;
+
 template<std::ptrdiff_t N, std::size_t Index, class Tup>
 constexpr auto advance(const TupleIter<Tup, Index> &it) -> TupleIter<Tup, Index + N> {
     return it.template advance<N>();
