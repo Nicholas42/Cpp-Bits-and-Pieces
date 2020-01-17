@@ -185,6 +185,14 @@ template<class T>
 constexpr auto end([[maybe_unused]] T &tup) noexcept -> end_t<T> {
     return {tup};
 }
+
+template<class TupIter, class = std::enable_if_t<is_tuple_iter_v<TupIter>>>
+struct is_end :
+        std::conditional_t<std::decay_t<TupIter>::index() == std::decay_t<TupIter>::size(),
+                           std::true_type, std::false_type> {};
+
+template<class TupIter>
+constexpr bool is_end_v = is_end<TupIter>::value;
 }   // namespace tuple_iter
 
 #endif   // TUP_ITER_HPP
