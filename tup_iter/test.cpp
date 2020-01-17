@@ -2,8 +2,35 @@
 #include <cassert>
 #include "tup_iter.hpp"
 #include "any_iter.hpp"
+#include "tup_algo.hpp"
 
 using namespace tuple_iter;
+
+// Templated class that evaluates to true iff it is templated on cv char.
+template<class Found>
+struct StructFinder {
+    constexpr explicit operator bool() {
+        return std::is_same_v<std::remove_cv_t<Found>, char>;
+    }
+};
+
+// Templated class that searches for the value of its data member.
+template<class Val>
+struct ValueFinder {
+    template<class T, class = std::enable_if_t<!std::is_same_v<Val, T>>>
+    constexpr bool operator()([[maybe_unused]] T &&) {
+        return false;
+    }
+
+    constexpr bool operator()(const Val &v) {
+        return v == searched;
+    }
+
+    Val searched;
+};
+
+template<class Val>
+ValueFinder(Val)->ValueFinder<Val>;
 
 int main() {
     std::tuple<int, const char, double> tup{1, 'A', 2.1};
@@ -37,4 +64,23 @@ int main() {
     assert(value == std::get<1>(tup));
     static_assert(span_sequence<decltype(a), end_t<tup_t>>::size() == 1);
     static_assert(span_sequence<end_t<tup_t>, end_t<tup_t>>::size() == 0);
+
+    using it_t = find_type_t<StructFinder, begin_t<tup_t>, end_t<tup_t>>;
+    it_t it = find_type<StructFinder>(begin(tup), end(tup));
+    std::cout << *it << '\n';
+
+    auto any_iter = *find_type_any(begin(tup), a, ValueFinder{1});
+    static_assert(std::variant_size_v<decltype(any_iter)> == 2);
+    assert(any_iter.index() == 0);
+
+    // Should be type safe
+    assert(!find_type_any(begin(tup), end(tup), ValueFinder<int>{'A'}));
+
+    std::tuple numbers{1, 1.4, 3l, -7.123f, 'A'};
+
+    auto sum1 = for_each(begin(numbers), end(numbers), [sum=0.](auto v) mutable { std::cout << v << ", "; return sum += v;});
+    auto sum2 = accumulate(begin(numbers), end(numbers));
+
+    assert(sum1(0.) == sum2);
+    std::cout << '\n' << sum2 << '\n';
 }
