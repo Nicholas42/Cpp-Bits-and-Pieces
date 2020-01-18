@@ -52,21 +52,24 @@ struct TupleIter {
 
     // value_t for the past-the-end iterator
     template<size_t I = Index, class = void>
-    struct value_t_struct {
+    struct helper_struct {
         struct incomplete;
-        using type = incomplete;   // Wanted to take void, but then references do not compile even if in
-                                   // SFINAE-deactivated functions.
+        using value_type = incomplete;   // Wanted to take void, but then references do not compile even
+                                         // if in SFINAE-deactivated functions.
+        using next_type = incomplete;
     };
 
     // value_t for all dereferencable iterators
     template<size_t I>
-    struct value_t_struct<I, std::enable_if_t<(I < size())>> {
-        using type = std::tuple_element_t<I, std::decay_t<tuple_t>>;
+    struct helper_struct<I, std::enable_if_t<(I < size())>> {
+        using value_type = std::tuple_element_t<I, std::decay_t<tuple_t>>;
+        using next_type = TupleIter<tuple_t, Index + 1>;
     };
 
   public:
     // Return value of dereferencing operator
-    using value_t = typename value_t_struct<>::type;
+    using value_t = typename helper_struct<>::value_type;
+    using next_t = typename helper_struct<>::next_type;
 
     // Comparison methods. Compare equal to objects of the same type (i.e. have same index are over same
     // tuple type)
