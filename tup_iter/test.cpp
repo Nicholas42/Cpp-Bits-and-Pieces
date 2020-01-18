@@ -3,6 +3,7 @@
 #include "tup_iter.hpp"
 #include <cassert>
 #include <iostream>
+#include <vector>
 
 using namespace tuple_iter;
 
@@ -13,6 +14,9 @@ struct StructFinder {
         return std::is_same_v<std::remove_cv_t<Found>, char>;
     }
 };
+
+// Templated class that evaluates to true iff its template argument passed to its template template
+// argument instantiates a true type
 
 // Templated class that searches for the value of its data member.
 template<class Val>
@@ -69,6 +73,10 @@ auto main() -> int {
     it_t it = find_type<StructFinder>(begin(tup), end(tup));
     std::cout << *it << '\n';
 
+    using tup2_t = std::tuple<int, std::vector<int>, int, char, double>;
+    using it2_t = find_type_t<std::is_integral, typename begin_t<tup2_t>::next_t, end_t<tup2_t>>;
+    static_assert(it2_t::index() == 2);
+
     auto any_iter = *find_type_any(begin(tup), a, ValueFinder{1});
     static_assert(std::variant_size_v<decltype(any_iter)> == 2);
     assert(any_iter.index() == 0);
@@ -78,11 +86,11 @@ auto main() -> int {
 
     std::tuple numbers{1, 1.4, 3l, -7.123f, 'A'};
 
-    auto sum1 = for_each(begin(numbers), end(numbers), [sum = 0.](auto v) mutable {
+    auto sum1 = for_each(++begin(numbers), --end(numbers), [sum = 0.](auto v) mutable {
         std::cout << v << ", ";
         return sum += v;
     });
-    auto sum2 = accumulate(begin(numbers), end(numbers));
+    auto sum2 = accumulate(++begin(numbers), --end(numbers));
 
     assert(sum1(0.) == sum2);
     std::cout << '\n' << sum2 << '\n';
