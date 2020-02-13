@@ -57,10 +57,59 @@ struct vector : private Allocator {   // Empty base optimization for most cases
     using const_reverse_iterator = std::reverse_iterator<const_iterator>;
     // END Typedefs
 
-  private:
-    // Private constructor to forward to, handles allocation
-    vector(const allocator_type &alloc, size_type size) :
-            Allocator(alloc), m_size(size), m_data(allocator_traits::allocate(*this, m_size)) {}
+    vector(const allocator_type &alloc, size_type size, pointer p) noexcept :
+            Allocator(alloc), m_size(size), m_data(p) {}
+
+    struct vector_factory {
+        allocator_type m_alloc;
+        const size_type m_size;
+        pointer m_data;
+        pointer m_end = m_data;
+
+        vector_factory(allocator_type alloc, size_type size) :
+                m_alloc(alloc), m_size(size), m_data(allocator_traits::allocate(alloc, m_size)) {
+        }
+
+        template<class Iter>
+        vector_factory(allocator_type alloc, Iter first, Iter last) :
+                vector_factory(alloc, std::distance(first, last)) {
+            for (auto it = first; it != last; ++it, ++m_end) {
+                allocator_traits::construct(alloc, m_end, *it);
+            }
+        }
+
+        vector_factory(allocator_type alloc, size_type size, std::in_place_t /* unused */) :
+                vector_factory(alloc, size) {
+            for (; m_end != m_data + m_size; ++m_end) {
+                allocator_traits::construct(alloc, m_end);
+            }
+        }
+
+        vector_factory(allocator_type alloc, size_type size, const T &t) : vector_factory(alloc, size) {
+            for (; m_end != m_data + m_size; ++m_end) {
+                allocator_traits::construct(alloc, m_end, t);
+            }
+        }
+
+        operator vector() && {
+            return vector(m_alloc, m_size, std::exchange(m_data, nullptr));
+        }
+
+        // Will be called with non-null m_data iff allocation was successful, but construction failed
+        ~vector_factory() {
+            if (!m_data) {
+                return;
+            }
+
+            if constexpr (!std::is_trivially_destructible_v<T>) {
+                for (pointer p = m_data; p != m_end; ++p) {
+                    allocator_traits::destroy(m_alloc, p);
+                }
+            }
+
+            allocator_traits::deallocate(m_alloc, m_data, std::distance(m_data, m_end));
+        }
+    };
 
     template<class... Args>
     void construct(pointer loc, Args &&... args) {
@@ -76,24 +125,18 @@ struct vector : private Allocator {   // Empty base optimization for most cases
 
   public:
     // BEGIN Constructors
-    vector(size_type size, const T &value, const allocator_type &alloc = {}) : vector(alloc, size) {
-        construct_all(value);
-    }
+    vector(size_type size, const T &value, const allocator_type &alloc = {}) :
+            vector(vector_factory(alloc, size, value)) {}
 
     // Construction in-place without copy.
-    explicit vector(size_type size, const allocator_type &alloc = {}) : vector(alloc, size) {
-        construct_all();
-    }
+    explicit vector(size_type size, const allocator_type &alloc = {}) :
+            vector(vector_factory(alloc, size, std::in_place_t{})) {}
 
     template<class Iter,
              class = std::enable_if_t<std::is_base_of_v<
                  std::input_iterator_tag, typename std::iterator_traits<Iter>::iterator_category>>>
     vector(Iter begin, Iter end, const allocator_type &alloc = {}) :
-            vector(alloc, std::distance(begin, end)) {
-        std::for_each(begin, end, [this, loc = m_data](auto &&arg) mutable {
-            this->construct(loc++, std::forward<decltype(arg)>(arg));
-        });
-    }
+            vector(vector_factory(alloc, begin, end)) {}
 
     template<class _alloc = allocator_type,
              class = std::enable_if_t<std::is_same_v<std::decay_t<_alloc>, new_delete_allocator<T>>>>
@@ -330,10 +373,11 @@ bool operator<(const vector<T, Alloc> &lhs, const vector<T, Alloc> &rhs) {
     return std::lexicographical_compare(begin(lhs), end(lhs), begin(rhs), end(rhs));
 }
 
-// I am a bit skeptical regarding the sensibility of this 
+// I am a bit skeptical regarding the sensibility of this
 template<class T, class Alloc>
 bool operator<=(const vector<T, Alloc> &lhs, const vector<T, Alloc> &rhs) {
-    return std::lexicographical_compare(begin(lhs), end(lhs), begin(rhs), end(rhs), std::less_equal<>{});
+    return std::lexicographical_compare(
+        begin(lhs), end(lhs), begin(rhs), end(rhs), std::less_equal<>{});
 }
 
 template<class T, class Alloc>
@@ -343,7 +387,8 @@ bool operator>(const vector<T, Alloc> &lhs, const vector<T, Alloc> &rhs) {
 
 template<class T, class Alloc>
 bool operator>=(const vector<T, Alloc> &lhs, const vector<T, Alloc> &rhs) {
-    return std::lexicographical_compare(begin(lhs), end(lhs), begin(rhs), end(rhs), std::greater_equal<>{});
+    return std::lexicographical_compare(
+        begin(lhs), end(lhs), begin(rhs), end(rhs), std::greater_equal<>{});
 }
 
 }   // namespace static_vector
