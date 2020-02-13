@@ -57,6 +57,7 @@ struct vector : private Allocator {   // Empty base optimization for most cases
     using const_reverse_iterator = std::reverse_iterator<const_iterator>;
     // END Typedefs
 
+  private:
     vector(const allocator_type &alloc, size_type size, pointer p) noexcept :
             Allocator(alloc), m_size(size), m_data(p) {}
 
@@ -92,10 +93,6 @@ struct vector : private Allocator {   // Empty base optimization for most cases
             }
         }
 
-        operator vector() && {
-            return vector(m_alloc, m_size, std::exchange(m_data, nullptr));
-        }
-
         // Will be called with non-null m_data iff allocation was successful, but construction failed
         ~vector_factory() {
             if (!m_data) {
@@ -111,6 +108,9 @@ struct vector : private Allocator {   // Empty base optimization for most cases
             allocator_traits::deallocate(m_alloc, m_data, std::distance(m_data, m_end));
         }
     };
+
+    vector(vector_factory &&fac) :
+            vector(std::move(fac.m_alloc), fac.m_size, std::exchange(fac.m_data, nullptr)) {}
 
     template<class... Args>
     void construct(pointer loc, Args &&... args) {
