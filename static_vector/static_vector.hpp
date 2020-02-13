@@ -66,10 +66,11 @@ struct vector : private Allocator {   // Empty base optimization for most cases
         pointer m_data;
         pointer m_end = m_data;
 
+      private:
         vector_factory(allocator_type alloc, size_type size) :
-                m_alloc(alloc), m_size(size), m_data(allocator_traits::allocate(alloc, m_size)) {
-        }
+                m_alloc(alloc), m_size(size), m_data(allocator_traits::allocate(alloc, m_size)) {}
 
+      public:
         template<class Iter>
         vector_factory(allocator_type alloc, Iter first, Iter last) :
                 vector_factory(alloc, std::distance(first, last)) {
@@ -102,7 +103,7 @@ struct vector : private Allocator {   // Empty base optimization for most cases
             }
 
             if constexpr (!std::is_trivially_destructible_v<T>) {
-                for (; m_end != m_data; ) {
+                for (; m_end != m_data;) {
                     allocator_traits::destroy(m_alloc, --m_end);
                 }
             }
@@ -354,7 +355,7 @@ struct vector : private Allocator {   // Empty base optimization for most cases
     // END Modifiers
 
   private:
-    const size_type m_size{0};
+    const size_type m_size;
     pointer m_data;
 };
 
