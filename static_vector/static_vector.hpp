@@ -102,8 +102,8 @@ struct vector : private Allocator {   // Empty base optimization for most cases
             }
 
             if constexpr (!std::is_trivially_destructible_v<T>) {
-                for (pointer p = m_data; p != m_end; ++p) {
-                    allocator_traits::destroy(m_alloc, p);
+                for (; m_end != m_data; ) {
+                    allocator_traits::destroy(m_alloc, --m_end);
                 }
             }
 
@@ -158,8 +158,8 @@ struct vector : private Allocator {   // Empty base optimization for most cases
 
         if constexpr (!std::is_trivially_destructible_v<T>) {
             // Do not need to do this for trivially destructible types.
-            for (pointer p = std::begin(*this); p != std::end(*this); ++p) {
-                allocator_traits::destroy(*this, p);
+            for (pointer end = m_data + m_size; end != m_data;) {
+                allocator_traits::destroy(*this, --end);
             }
         }
         allocator_traits::deallocate(*this, m_data, m_size);
