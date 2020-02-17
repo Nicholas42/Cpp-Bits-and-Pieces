@@ -149,7 +149,7 @@ struct vector : private Allocator {   // Empty base optimization for most cases
     vector(size_type size, const T &value, const allocator_type &alloc = {}) :
             vector(vector_factory(alloc, size, value)) {}
 
-    // Construction in-place without copy.
+    // Default-Construction in-place without copy.
     explicit vector(size_type size, const allocator_type &alloc = {}) :
             vector(vector_factory(alloc, size, std::in_place_t{})) {}
 
@@ -170,7 +170,7 @@ struct vector : private Allocator {   // Empty base optimization for most cases
     vector(const vector &other) : vector(begin(other), end(other), other) {}
 
     vector(vector &&other) :
-            vector(std::exchange(other.m_data, nullptr), other.m_size, std::move(other)) {}
+            vector(std::exchange(other.m_data, nullptr), other.m_size, static_cast<std::remove_reference_t<allocator_type>&&>(other)) {}
 
     ~vector() {
         if (!m_data) {
@@ -219,7 +219,7 @@ struct vector : private Allocator {   // Empty base optimization for most cases
     auto at(size_type index) -> reference {
         if (index >= m_size || empty()) {
             std::stringstream mes;
-            mes << "Index " << index << " is not small than size " << m_size << '\n';
+            mes << "Index " << index << " is not smaller than size " << m_size << '\n';
             throw std::out_of_range{mes.str()};
         }
         return (*this)[index];
@@ -228,7 +228,7 @@ struct vector : private Allocator {   // Empty base optimization for most cases
     auto at(size_type index) const -> const_reference {
         if (index >= m_size || empty()) {
             std::stringstream mes;
-            mes << "Index " << index << " is not small than size " << m_size << '\n';
+            mes << "Index " << index << " is not smaller than size " << m_size << '\n';
             throw std::out_of_range{mes.str()};
         }
         return (*this)[index];
@@ -362,7 +362,7 @@ struct vector : private Allocator {   // Empty base optimization for most cases
 
     template<class... Args>
     auto construct_at(iterator pos, Args &&... args) -> value_type & {
-        allocator_traits::deallocate(*this, pos);
+        allocator_traits::destroy(*this, pos);
 
         construct(pos, std::forward<Args>(args)...);
         return *pos;
