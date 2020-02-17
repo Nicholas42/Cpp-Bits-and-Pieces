@@ -18,24 +18,44 @@ namespace detail {
 // TODO: Make a wrapper so that iterator is not a raw pointer
 template<class Ptr>
 using iter_wrap = Ptr;
-}   // namespace detail
+
+// Type Trait that checks if the deallocation does also the destruction, opt-in by the allocator.
+template<class T, class = void>
+struct destroying_delete : std::false_type {};
 
 template<class T>
-struct new_delete_allocator {
+struct destroying_delete<T, typename T::is_destroying> : std::true_type {};
+
+template<class T>
+constexpr bool destroying_delete_v = destroying_delete<T>::value;
+}   // namespace detail
+
+template<class T, class deleter = std::default_delete<T[]>>
+struct delete_allocator {
+    deleter del{};
+
     using value_type = T;
+    using size_type = std::size_t;
+    using difference_type = std::ptrdiff_t;
 
-    template<class U, class... Args>
-    void construct(U * /* unused */, Args &&... /* unused */) {}
-
-    [[nodiscard]] T *allocate(std::size_t n, const void * /* unused */ = 0) {
+    T* allocate(std::size_t n) {
         return new T[n];
     }
 
-    void deallocate(T *p, std::size_t /* unused */) {
-        delete[] p;
+    void deallocate(T* ptr, size_type /* unused */) {
+        del(ptr);
     }
 
-    void destroy(T * /* unused */) {}
+    template<class U, class... Args>
+    void construct(U * ptr, Args &&... args) {
+        new (ptr) T(std::forward<Args>(args)...);
+    }
+
+    void destroy(T * ptr) {
+        ptr->~T();
+    }
+
+    using is_destroying = void;
 };
 
 template<class T, class Allocator = std::allocator<T>>
@@ -140,7 +160,7 @@ struct vector : private Allocator {   // Empty base optimization for most cases
             vector(vector_factory(alloc, begin, end)) {}
 
     template<class _alloc = allocator_type,
-             class = std::enable_if_t<std::is_same_v<std::decay_t<_alloc>, new_delete_allocator<T>>>>
+             class = std::enable_if_t<detail::destroying_delete_v<_alloc>>>
     vector(pointer &&ptr, size_type len, const allocator_type &alloc = {}) :
             Allocator(alloc), m_size(len), m_data(ptr) {}
 
@@ -157,8 +177,8 @@ struct vector : private Allocator {   // Empty base optimization for most cases
             return;
         }
 
-        if constexpr (!std::is_trivially_destructible_v<T>) {
-            // Do not need to do this for trivially destructible types.
+        if constexpr (!detail::destroying_delete_v<allocator_type>) {
+            // We do not want to do this, if the deallocation function does the destruction
             for (pointer end = m_data + m_size; end != m_data;) {
                 allocator_traits::destroy(*this, --end);
             }

@@ -19,7 +19,7 @@ int main() {
 
     int *i = new int[10];
 
-    vector<int, new_delete_allocator<int>> z(std::move(i), 10);
+    vector<int, delete_allocator<int>> z(std::move(i), 10);
 
     try {
         // Should not leak
